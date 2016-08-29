@@ -7,15 +7,18 @@
 
 import scrapy
 
+class ResultItem(scrapy.Item):
+	post_item = scrapy.Field()
+	comment_items = scrapy.Field()
 
 class PostItem(scrapy.Item):
-    # define the fields for your item here like:
-    title = scrapy.Field()
-    author = scrapy.Field()
-    content = scrapy.Field()
-    comment = scrapy.Field()
+	url = scrapy.Field()
+	title = scrapy.Field()
+	author = scrapy.Field()
+	content = scrapy.Field()
 	
 class CommentItem(scrapy.Item):
-    author = scrapy.Field()
-    content = scrapy.Field()
-    url = scrapy.Field()
+	url = scrapy.Field()
+	author = scrapy.Field()
+	content = scrapy.Field()
+	
