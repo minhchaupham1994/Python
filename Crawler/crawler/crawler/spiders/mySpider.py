@@ -21,9 +21,9 @@ class TinhteSpider(scrapy.Spider):
 		self.CONTENT_OFFSET = "div/div[2]/div[1]/article/blockquote/text()"
 		self.COMMENT_AUTHOR_OFFSET = "div/div[1]/div/h3/div/a/text()"
 		self.NEXT_PATH = "//*[@id='content']/div/div/div/div/div/div[4]/div[2]/nav/a[contains(text(), 'Sau')]/@href"
-		self.result = ["chau"]
+		self.my_meta = {}
+		self.is_main_content = True
 		
-
 		
 	def parse(self, response):
 		self.chau = {"temp":""}
@@ -34,22 +34,17 @@ class TinhteSpider(scrapy.Spider):
 			if(flag < 3):
 				flag += 1
 				url = response.urljoin(href.extract())
-				yield scrapy.Request(url, callback=self.parse_dir_contents, encoding="UTF-8")
+				yield scrapy.Request("https://tinhte.vn/threads/facebook-mo-he-thong-nhan-dien-hinh-anh-cua-minh-cho-tat-ca-moi-nguoi.2636679/", callback=self.parse_dir_contents, encoding="UTF-8")
 
 	def parse_dir_contents(self, response):
 		logging.warning("This is parse_dir_contents")
-		self.is_main_content = True
 		item = ResultItem()
+		self.my_meta = {"item": item}
 		item['post_item'] = list(self.parse_post_xpath(response))
-		item['comment_items'] = list(self.parse_comment_xpath(response))
+		item['comment_items'] = list(self.parse_comment_helper(response))
 		
-		next_page = response.xpath(self.NEXT_PATH)
-		if next_page:
-			logging.warning("This is next_page")
-			url = response.urljoin(next_page[0].extract())
-			my_meta = {"item": item}
-			scrapy.Request(url, meta=my_meta, callback=self.parse_comment_helper)
-
+		
+		
 		return item
 		
 	
@@ -64,13 +59,15 @@ class TinhteSpider(scrapy.Spider):
 			yield item
 			
 	def parse_comment_helper(self, response):
-		item = response.meta['item']	
-		item['comment_items'] += list(parse_comment_xpath(response))
+		if(self.is_main_content):
+			logging.warning("This is parse_comment_helper")
+			item = response.meta['item']	
+			item[' comment_items'] += list(self.parse_comment_xpath(response))
 		
 		next_page = response.xpath(self.NEXT_PATH)
 		if next_page:
 			url = response.urljoin(next_page[0].extract())
-			scrapy.Request(url, meta=response.meta, callback=self.parse_comment_helper) 
+			yield scrapy.Request(url, meta=response.meta, callback=self.parse_comment_helper) 
 			
 	def parse_comment_xpath(self, response):		
 		for c in response.xpath(self.HEAD_CONTENT_PATH):
